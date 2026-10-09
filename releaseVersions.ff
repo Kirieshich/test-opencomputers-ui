@@ -1,0 +1,17 @@
+{
+  program = {
+    ver = "1.0.0",
+    note = {
+      "Initial release of STARGATE Command Interface",
+      "4-pointed star logo with color gradient",
+      "Redstone control for 6 systems",
+      "Animated chevron dialing sequence",
+      "Real-time uptime, clock, event log",
+    },
+    manifest = {
+      "stargate.lua",
+      "logo.ff",
+      "installer.lua",
+    },
+  },
+}
