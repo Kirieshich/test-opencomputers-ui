@@ -14,8 +14,8 @@ if HasInternet then internet = require("internet") end
 -- ============================================================
 -- НАСТРОЙКИ РЕПОЗИТОРИЯ — ОТРЕДАКТИРУЙ ПОД СЕБЯ!
 -- ============================================================
-local GITHUB_USER   = "YOUR_USERNAME"
-local GITHUB_REPO   = "YOUR_REPO"
+local GITHUB_USER   = "Kirieshich"
+local GITHUB_REPO   = "test-opencomputers-ui"
 local GITHUB_BRANCH = "main"
 
 local BranchURL = "https://raw.githubusercontent.com/" ..
