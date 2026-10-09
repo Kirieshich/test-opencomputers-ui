@@ -1,6 +1,5 @@
 -- installer.lua
 -- STARGATE Command Interface Installer
--- Usage: installer.lua
 
 local component = require("component")
 local serialization = require("serialization")
@@ -12,12 +11,13 @@ local HasInternet = component.isAvailable("internet")
 if HasInternet then internet = require("internet") end
 
 -- ============================================================
--- НАСТРОЙКИ РЕПОЗИТОРИЯ — ОТРЕДАКТИРУЙ ПОД СЕБЯ!
+-- НАСТРОЙКИ РЕПОЗИТОРИЯ
 -- ============================================================
 local GITHUB_USER   = "Kirieshich"
 local GITHUB_REPO   = "test-opencomputers-ui"
 local GITHUB_BRANCH = "main"
 
+-- ВАЖНО: без /release, файлы в корне!
 local BranchURL = "https://raw.githubusercontent.com/" ..
                   GITHUB_USER .. "/" .. GITHUB_REPO .. "/" ..
                   GITHUB_BRANCH
