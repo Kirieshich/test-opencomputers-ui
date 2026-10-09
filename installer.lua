@@ -20,7 +20,7 @@ local GITHUB_BRANCH = "main"
 
 local BranchURL = "https://raw.githubusercontent.com/" ..
                   GITHUB_USER .. "/" .. GITHUB_REPO .. "/" ..
-                  GITHUB_BRANCH .. "/release"
+                  GITHUB_BRANCH
 
 local InstallDir = "/stargate"
 local ReleaseVersionsFile = InstallDir .. "/releaseVersions.ff"
@@ -28,9 +28,6 @@ local ReleaseVersions = nil
 
 local args, opts = shell.parse(...)
 
--- ============================================================
--- ПРОВЕРКИ
--- ============================================================
 local function onlineCheck()
     if not HasInternet then
         io.stderr:write("ERROR: No Internet Card installed.\n")
@@ -38,9 +35,6 @@ local function onlineCheck()
     end
 end
 
--- ============================================================
--- СОЗДАНИЕ КАТАЛОГА
--- ============================================================
 local function createInstallDirectory()
     if not filesystem.isDirectory(InstallDir) then
         print("Creating " .. InstallDir .. " directory...")
@@ -52,9 +46,6 @@ local function createInstallDirectory()
     end
 end
 
--- ============================================================
--- ПРОВЕРКА СУЩЕСТВУЮЩЕЙ УСТАНОВКИ
--- ============================================================
 local function checkForExistingInstall()
     if filesystem.exists(InstallDir .. "/stargate.lua") then
         print([[
@@ -72,9 +63,6 @@ local function checkForExistingInstall()
     end
 end
 
--- ============================================================
--- ЗАГРУЗКА ФАЙЛОВ
--- ============================================================
 local function downloadFile(fileName, savePath)
     savePath = savePath or fileName
     print("Downloading: " .. fileName)
@@ -109,15 +97,11 @@ local function downloadNeededFiles()
 
     downloadManifestedFiles(ReleaseVersions.program)
 
-    -- Сохраняем установленную версию
     local vfile = io.open(InstallDir .. "/installedVersions.ff", "w")
     vfile:write(serialization.serialize(ReleaseVersions.program))
     vfile:close()
 end
 
--- ============================================================
--- ЯРЛЫК В /bin
--- ============================================================
 local function createSystemShortcut()
     local shortcut = [[
 shell = require("shell")
@@ -138,9 +122,6 @@ end
     file:close()
 end
 
--- ============================================================
--- ЗАПУСК
--- ============================================================
 onlineCheck()
 createInstallDirectory()
 checkForExistingInstall()

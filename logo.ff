@@ -1,6 +1,6 @@
 -- logo.ff
--- 4-pointed star, 33x21 characters
--- Colors: ▓ = gold, ▒ = orange, ░ = bronze
+-- 4-pointed star, 33x23 characters
+-- Colors: ▓ = gold (center), ▒ = orange (mid), ░ = bronze (edges)
 
 LogoStar = {
   "                ░                ",
@@ -29,13 +29,12 @@ LogoStar = {
 }
 
 LogoColors = {
-  ["▓"] = 0xFFD700,  -- gold (center)
-  ["▒"] = 0xFF8C00,  -- orange (mid)
-  ["░"] = 0x8B4513,  -- bronze (edges)
+  ["▓"] = 0xFFD700,  -- gold
+  ["▒"] = 0xFF8C00,  -- orange
+  ["░"] = 0x8B4513,  -- bronze
 }
 
--- Небольшая вспышка в центре
 LogoCenter = {
-  star = {17, 12},  -- x, y в координатах массива (1-индекс)
+  star = {17, 12},
   color = 0xFFFFFF,
 }

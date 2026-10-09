@@ -1,6 +1,5 @@
 -- stargate.lua
 -- STARGATE Command Interface v1.0.0
--- https://github.com/YOUR_USER/YOUR_REPO
 
 local component = require("component")
 local term = require("term")
@@ -12,9 +11,6 @@ local gpu = component.gpu
 
 local INSTALL_DIR = "/stargate"
 
--- ============================================================
--- ЗАГРУЗКА ЛОГОТИПА
--- ============================================================
 local logoPath = INSTALL_DIR .. "/logo.ff"
 if not filesystem.exists(logoPath) then
     io.stderr:write("Missing " .. logoPath .. "\n")
@@ -23,9 +19,6 @@ if not filesystem.exists(logoPath) then
 end
 dofile(logoPath)
 
--- ============================================================
--- ЦВЕТА
--- ============================================================
 local C = {
     black=0x000000, white=0xFFFFFF, red=0xFF3333, green=0x33DD33,
     yellow=0xFFEE22, cyan=0x22DDDD, gray=0x606060, lgray=0xB0B0B0,
@@ -43,9 +36,6 @@ end
 local hasRedstone = component.isAvailable("redstone")
 local redstone = hasRedstone and component.redstone or nil
 
--- ============================================================
--- КНОПКИ
--- ============================================================
 local buttons = {
     {label="GATE",      key="1", side=0,  state=false, kind="toggle"},
     {label="LIGHTS",    key="2", side=1,  state=false, kind="toggle"},
@@ -72,9 +62,6 @@ local function addLog(msg, color)
 end
 addLog("System initialized", C.green)
 
--- ============================================================
--- РИСОВАНИЕ ЛОГОТИПА
--- ============================================================
 local function drawLogo(cx, cy)
     for i, line in ipairs(LogoStar) do
         local y = cy + i - 1
@@ -102,18 +89,6 @@ local function drawLogo(cx, cy)
     gpu.setForeground(C.white)
 end
 
-local function clearLogo(cx, cy)
-    local maxW = 0
-    for _, line in ipairs(LogoStar) do
-        if #line > maxW then maxW = #line end
-    end
-    gpu.setBackground(C.black)
-    gpu.fill(cx, cy, maxW, #LogoStar, " ")
-end
-
--- ============================================================
--- UI
--- ============================================================
 local function drawBorder()
     gpu.setBackground(C.dblue)
     gpu.setForeground(C.cyan)
@@ -261,9 +236,6 @@ local function drawStatusBar()
     gpu.set(W - 25, y, "KEYS: 1-7 / Q=EXIT")
 end
 
--- ============================================================
--- ПЕРЕРИСОВКА
--- ============================================================
 local LOGO_X, LOGO_Y = 47, 4
 
 local function redrawAll()
@@ -294,9 +266,6 @@ local function refreshDynamic()
     drawDialBar()
 end
 
--- ============================================================
--- ДЕЙСТВИЯ
--- ============================================================
 local function setRedstoneOutput(idx)
     local btn = buttons[idx]
     if redstone and btn.side >= 0 then
@@ -379,9 +348,6 @@ local function handleButton(idx)
     return nil
 end
 
--- ============================================================
--- ЗАГРУЗОЧНЫЙ ЭКРАН
--- ============================================================
 local function loadingScreen()
     gpu.setBackground(C.black)
     gpu.setForeground(C.white)
@@ -427,9 +393,6 @@ local function loadingScreen()
     os.sleep(0.5)
 end
 
--- ============================================================
--- ГЛАВНЫЙ ЦИКЛ
--- ============================================================
 term.clear()
 loadingScreen()
 redrawAll()
