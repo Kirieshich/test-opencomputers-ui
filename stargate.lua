@@ -1,5 +1,6 @@
 -- stargate.lua
--- STARGATE Command Interface v1.0.0
+-- STARGATE Command Interface v1.1.0
+-- Layout: 4 floors, logo + status panel pinned right
 
 local component = require("component")
 local term = require("term")
@@ -10,11 +11,9 @@ local filesystem = require("filesystem")
 local gpu = component.gpu
 
 local INSTALL_DIR = "/stargate"
-
 local logoPath = INSTALL_DIR .. "/logo.ff"
 if not filesystem.exists(logoPath) then
     io.stderr:write("Missing " .. logoPath .. "\n")
-    io.stderr:write("Reinstall with installer.lua\n")
     os.exit(1)
 end
 dofile(logoPath)
@@ -36,6 +35,46 @@ end
 local hasRedstone = component.isAvailable("redstone")
 local redstone = hasRedstone and component.redstone or nil
 
+-- ============================================================
+-- ЭТАЖИ (FLOORS)
+-- ============================================================
+-- Floor 1: Header           y = 1..3
+-- Floor 2: Main             y = 4..19
+-- Floor 3: Log              y = 20..23
+-- Floor 4: Footer           y = 24..25
+
+local F_HEADER_TOP   = 1
+local F_MAIN_TOP     = 4
+local F_MAIN_BOTTOM  = 19
+local F_LOG_TOP      = 20
+local F_LOG_BOTTOM   = 23
+local F_FOOTER_TOP   = 24
+local F_FOOTER_BOTTOM= H
+
+-- Кнопки (левая колонка FLOOR 2)
+local BTN_COL1 = 2
+local BTN_COL2 = 22
+local BTN_W    = 18
+local BTN_ROWS = {5, 9, 13, 17}     -- top y каждой кнопки
+
+-- Логотип (правая колонка FLOOR 2, верх)
+local LOGO_X = 60   -- центр правой части
+local LOGO_Y = 5
+
+-- Панель статуса (правая колонка FLOOR 2, низ)
+local ST_X = 44
+local ST_Y = 17
+local ST_W = W - ST_X - 1    -- до правой рамки
+local ST_H = 4
+
+-- Лог (FLOOR 3)
+local LOG_X = 3
+local LOG_Y = F_LOG_TOP + 1
+local LOG_W = W - 6
+
+-- ============================================================
+-- КНОПКИ
+-- ============================================================
 local buttons = {
     {label="GATE",      key="1", side=0,  state=false, kind="toggle"},
     {label="LIGHTS",    key="2", side=1,  state=false, kind="toggle"},
@@ -62,7 +101,11 @@ local function addLog(msg, color)
 end
 addLog("System initialized", C.green)
 
+-- ============================================================
+-- ЛОГОТИП
+-- ============================================================
 local function drawLogo(cx, cy)
+    -- cx, cy — координаты верхнего левого угла
     for i, line in ipairs(LogoStar) do
         local y = cy + i - 1
         if y >= 1 and y <= H then
@@ -80,15 +123,13 @@ local function drawLogo(cx, cy)
             end
         end
     end
-    if LogoCenter then
-        gpu.setBackground(LogoCenter.color)
-        gpu.setForeground(LogoCenter.color)
-        gpu.set(cx + LogoCenter.star[1] - 1, cy + LogoCenter.star[2] - 1, " ")
-    end
     gpu.setBackground(C.black)
     gpu.setForeground(C.white)
 end
 
+-- ============================================================
+-- FLOOR 1: HEADER
+-- ============================================================
 local function drawBorder()
     gpu.setBackground(C.dblue)
     gpu.setForeground(C.cyan)
@@ -104,10 +145,20 @@ local function drawHeader()
     gpu.setBackground(C.dblue)
     gpu.setForeground(C.gold)
     gpu.set(4, 2, "STARGATE COMMAND INTERFACE")
-    gpu.setForeground(C.teal)
+    gpu.setForeground(C.cyan)
     gpu.set(3, 3, string.rep("-", W - 4))
 end
 
+local function drawClock()
+    gpu.setBackground(C.dblue)
+    gpu.setForeground(C.cyan)
+    local clock = os.date and os.date("%H:%M:%S") or "00:00:00"
+    gpu.set(W - #clock - 3, 2, clock)
+end
+
+-- ============================================================
+-- FLOOR 2: BUTTONS (слева)
+-- ============================================================
 local function drawButton(btn, x, y, w)
     local bg = btn.state and C.darkgreen or C.dgray
     gpu.setBackground(bg)
@@ -123,108 +174,96 @@ local function drawButton(btn, x, y, w)
 end
 
 local function drawButtons()
-    local col1, col2, w = 3, 25, 20
-    local rows = {5, 9, 13, 17}
     for i = 1, 4 do
-        drawButton(buttons[i], col1, rows[i], w)
-        drawButton(buttons[i + 4], col2, rows[i], w)
+        drawButton(buttons[i], BTN_COL1, BTN_ROWS[i], BTN_W)
+        drawButton(buttons[i + 4], BTN_COL2, BTN_ROWS[i], BTN_W)
     end
 end
 
-local function drawPanelBackground()
+-- ============================================================
+-- FLOOR 2: STATUS PANEL (справа, под логотипом)
+-- ============================================================
+local function drawStatusPanel()
+    -- фон панели
     gpu.setBackground(C.panel)
     gpu.setForeground(C.panel)
-    gpu.fill(48, 17, 30, 5, " ")
-end
+    gpu.fill(ST_X, ST_Y, ST_W, ST_H, " ")
 
-local function drawClock()
-    gpu.setBackground(C.dblue)
-    gpu.setForeground(C.cyan)
-    local clock = os.date and os.date("%H:%M:%S") or "00:00:00"
-    gpu.set(W - #clock - 3, 2, clock)
-end
+    -- заголовок панели
+    gpu.setForeground(C.teal)
+    gpu.set(ST_X + 1, ST_Y, "╡ STARGATE STATUS ╞")
+    gpu.fill(ST_X + 19, ST_Y, ST_W - 20, 1, " ")
 
-local function drawUptime()
+    -- Строки статуса
+    local labelX = ST_X + 2
+    local valueX = ST_X + 14
+
+    -- UPTIME
+    gpu.setForeground(C.teal)
+    gpu.set(labelX, ST_Y + 1, "UPTIME:")
+    gpu.setForeground(C.white)
     local sec = math.floor(computer.uptime() - S.bootTime)
     local h = math.floor(sec / 3600)
     local m = math.floor((sec % 3600) / 60)
     local s = sec % 60
-    local str = string.format("%02d:%02d:%02d", h, m, s)
-    gpu.setBackground(C.panel)
-    gpu.setForeground(C.teal)
-    gpu.set(49, 17, "UPTIME:")
-    gpu.setForeground(C.white)
-    gpu.set(59, 17, str)
-end
+    gpu.set(valueX, ST_Y + 1, string.format("%02d:%02d:%02d", h, m, s))
 
-local function drawActiveCount()
+    -- ACTIVE
     local active = 0
     for _, b in ipairs(buttons) do
         if b.state and b.kind == "toggle" then active = active + 1 end
     end
-    gpu.setBackground(C.panel)
     gpu.setForeground(C.teal)
-    gpu.set(49, 18, "ACTIVE:")
+    gpu.set(labelX, ST_Y + 2, "ACTIVE:")
     gpu.setForeground(C.white)
-    gpu.set(59, 18, tostring(active) .. " / 6  ")
-end
+    gpu.set(valueX, ST_Y + 2, tostring(active) .. " / 6    ")
 
-local function drawStatus()
-    gpu.setBackground(C.panel)
+    -- STATUS
     gpu.setForeground(C.teal)
-    gpu.set(49, 19, "STATUS:")
+    gpu.set(labelX, ST_Y + 3, "STATUS:")
     if S.dialing then
         gpu.setForeground(C.yellow)
-        gpu.set(59, 19, "DIALING...  ")
+        gpu.set(valueX, ST_Y + 3, "DIALING...   ")
     elseif buttons[1].state then
         gpu.setForeground(C.green)
-        gpu.set(59, 19, "GATE OPEN  ")
+        gpu.set(valueX, ST_Y + 3, "GATE OPEN    ")
     else
         gpu.setForeground(C.lgray)
-        gpu.set(59, 19, "STANDBY    ")
+        gpu.set(valueX, ST_Y + 3, "STANDBY      ")
     end
 end
 
-local function drawTotal()
-    gpu.setBackground(C.panel)
-    gpu.setForeground(C.teal)
-    gpu.set(49, 20, "TOTAL:")
-    gpu.setForeground(C.white)
-    gpu.set(59, 20, tostring(S.activations) .. " runs     ")
-end
-
-local function drawDialBar()
-    gpu.setBackground(C.panel)
-    gpu.setForeground(C.teal)
-    gpu.set(49, 21, "DIAL:")
-    local barW = 18
-    local filled = math.floor(barW * S.chevrons / 9)
-    gpu.setBackground(C.darkgreen)
-    gpu.fill(59, 21, filled, 1, " ")
-    gpu.setBackground(C.slate)
-    gpu.fill(59 + filled, 21, barW - filled, 1, " ")
-    gpu.setBackground(C.black)
-end
-
+-- ============================================================
+-- FLOOR 3: LOG
+-- ============================================================
 local function drawLog()
-    local y = H - 4
-    gpu.setBackground(C.panel)
+    local y = F_LOG_TOP
+
+    -- Разделитель с надписью LOG
+    gpu.setBackground(C.black)
     gpu.setForeground(C.teal)
-    gpu.set(3, y, "EVENT LOG")
+    gpu.set(3, y, "──── LOG ")
+    gpu.set(11, y, string.rep("─", W - 13))
+
+    -- Строки лога
     for i = 1, 3 do
         gpu.setBackground(C.black)
-        gpu.fill(3, y + i, W - 4, 1, " ")
+        gpu.setForeground(C.black)
+        gpu.fill(LOG_X, y + i, LOG_W, 1, " ")
         if S.log[i] then
             gpu.setForeground(C.gray)
-            gpu.set(3, y + i, "> ")
+            gpu.set(LOG_X, y + i, "> ")
             gpu.setForeground(S.log[i].color)
-            gpu.set(5, y + i, S.log[i].msg)
+            gpu.set(LOG_X + 2, y + i, S.log[i].msg)
         end
     end
 end
 
+-- ============================================================
+-- FLOOR 4: FOOTER
+-- ============================================================
 local function drawStatusBar()
-    local y = H - 1
+    local y = F_FOOTER_BOTTOM
     gpu.setBackground(C.dblue)
     gpu.setForeground(C.lgray)
     gpu.fill(2, y, W - 2, 1, " ")
@@ -236,36 +275,31 @@ local function drawStatusBar()
     gpu.set(W - 25, y, "KEYS: 1-7 / Q=EXIT")
 end
 
-local LOGO_X, LOGO_Y = 47, 4
-
+-- ============================================================
+-- ПОЛНАЯ / ЧАСТИЧНАЯ ПЕРЕРИСОВКА
+-- ============================================================
 local function redrawAll()
     gpu.setBackground(C.black)
     gpu.setForeground(C.white)
     gpu.fill(1, 1, W, H, " ")
     drawBorder()
     drawHeader()
+    drawClock()
     drawButtons()
     drawLogo(LOGO_X, LOGO_Y)
-    drawPanelBackground()
-    drawClock()
-    drawUptime()
-    drawActiveCount()
-    drawStatus()
-    drawTotal()
-    drawDialBar()
+    drawStatusPanel()
     drawLog()
     drawStatusBar()
 end
 
 local function refreshDynamic()
     drawClock()
-    drawUptime()
-    drawActiveCount()
-    drawStatus()
-    drawTotal()
-    drawDialBar()
+    drawStatusPanel()
 end
 
+-- ============================================================
+-- ДЕЙСТВИЯ
+-- ============================================================
 local function setRedstoneOutput(idx)
     local btn = buttons[idx]
     if redstone and btn.side >= 0 then
@@ -280,7 +314,7 @@ local function startDialing()
     S.chevrons = 0
     addLog("Dialing sequence started", C.yellow)
     drawLog()
-    drawStatus()
+    drawStatusPanel()
 end
 
 local function updateDialing(dt)
@@ -295,12 +329,12 @@ local function updateDialing(dt)
             setRedstoneOutput(1)
             S.activations = S.activations + 1
             addLog("Gate activated", C.green)
-            drawButton(buttons[1], 3, 5, 20)
+            drawButton(buttons[1], BTN_COL1, BTN_ROWS[1], BTN_W)
         else
             addLog("Chevron " .. S.chevrons .. " locked", C.gold)
         end
         drawLog()
-        refreshDynamic()
+        drawStatusPanel()
         return true
     end
     return false
@@ -318,7 +352,7 @@ local function emergencyShutdown()
     addLog("EMERGENCY SHUTDOWN!", C.red)
     drawButtons()
     drawLog()
-    refreshDynamic()
+    drawStatusPanel()
 end
 
 local function handleButton(idx)
@@ -336,18 +370,24 @@ local function handleButton(idx)
         setRedstoneOutput(idx)
         addLog(btn.label .. ": " .. (btn.state and "ON" or "OFF"),
                btn.state and C.green or C.gray)
-        local col1, col2, w = 3, 25, 20
-        local rows = {5, 9, 13, 17}
+        -- перерисовываем только нажатую кнопку
         for i = 1, 4 do
-            if i == idx then drawButton(buttons[i], col1, rows[i], w) end
-            if i + 4 == idx then drawButton(buttons[i+4], col2, rows[i], w) end
+            if i == idx then
+                drawButton(buttons[i], BTN_COL1, BTN_ROWS[i], BTN_W)
+            end
+            if i + 4 == idx then
+                drawButton(buttons[i + 4], BTN_COL2, BTN_ROWS[i], BTN_W)
+            end
         end
         drawLog()
-        refreshDynamic()
+        drawStatusPanel()
     end
     return nil
 end
 
+-- ============================================================
+-- ЗАГРУЗОЧНЫЙ ЭКРАН
+-- ============================================================
 local function loadingScreen()
     gpu.setBackground(C.black)
     gpu.setForeground(C.white)
@@ -393,6 +433,9 @@ local function loadingScreen()
     os.sleep(0.5)
 end
 
+-- ============================================================
+-- ГЛАВНЫЙ ЦИКЛ
+-- ============================================================
 term.clear()
 loadingScreen()
 redrawAll()
@@ -413,15 +456,13 @@ while true do
         end
     elseif e[1] == "touch" then
         local tx, ty = e[3], e[4]
-        local col1, col2, w = 3, 25, 20
-        local rows = {5, 9, 13, 17}
         for i = 1, 4 do
-            local y = rows[i]
+            local y = BTN_ROWS[i]
             if ty >= y and ty < y + 3 then
-                if tx >= col1 and tx < col1 + w then
+                if tx >= BTN_COL1 and tx < BTN_COL1 + BTN_W then
                     local r = handleButton(i)
                     if r == "exit" then goto done end
-                elseif tx >= col2 and tx < col2 + w then
+                elseif tx >= BTN_COL2 and tx < BTN_COL2 + BTN_W then
                     local r = handleButton(i + 4)
                     if r == "exit" then goto done end
                 end
